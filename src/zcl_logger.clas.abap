@@ -409,6 +409,10 @@ CLASS zcl_logger IMPLEMENTATION.
     msg_type    = cl_abap_typedescr=>describe_by_data( obj_to_log ).
     struct_kind = get_struct_kind( msg_type ).
 
+    " Added Detaillevel importing PARAMETER
+    detailed_msg-detlevel = detlevel.
+    detailed_msg-probclass = '4'.
+
     IF obj_to_log IS NOT SUPPLIED.
       detailed_msg = add_syst_msg( syst ).
     ELSEIF struct_kind = c_struct_kind-syst.
