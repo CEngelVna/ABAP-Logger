@@ -64,10 +64,10 @@ CLASS zcl_logger DEFINITION
 
     CONSTANTS:
       BEGIN OF c_struct_kind,
-                 syst  TYPE i VALUE 1,
-                 bapi  TYPE i VALUE 2,
-                 bdc   TYPE i VALUE 3,
-                 sprot TYPE i VALUE 4,
+        syst  TYPE i VALUE 1,
+        bapi  TYPE i VALUE 2,
+        bdc   TYPE i VALUE 3,
+        sprot TYPE i VALUE 4,
       END OF c_struct_kind .
 
 *"* private components of class ZCL_LOGGER
@@ -358,16 +358,16 @@ CLASS zcl_logger IMPLEMENTATION.
 
   METHOD zif_logger~add.
 
-    DATA: detailed_msg         TYPE bal_s_msg,
-          exception_data_table TYPE tty_exception_data,
-          free_text_msg        TYPE char200,
-          ctx_type             TYPE REF TO cl_abap_typedescr,
-          ctx_ddic_header      TYPE x030l,
-          msg_type             TYPE REF TO cl_abap_typedescr,
-          struct_kind          TYPE i,
-          formatted_context    TYPE bal_s_cont,
-          formatted_params     TYPE bal_s_parm,
-          message_type         TYPE symsgty,
+    DATA: detailed_msg             TYPE bal_s_msg,
+          exception_data_table     TYPE tty_exception_data,
+          free_text_msg            TYPE char200,
+          ctx_type                 TYPE REF TO cl_abap_typedescr,
+          ctx_ddic_header          TYPE x030l,
+          msg_type                 TYPE REF TO cl_abap_typedescr,
+          struct_kind              TYPE i,
+          formatted_context        TYPE bal_s_cont,
+          formatted_params         TYPE bal_s_parm,
+          message_type             TYPE symsgty,
           "these objects could be moved into their own method
           "see adt://***/sap/bc/adt/oo/classes/zcl_logger/source/main#start=391,10;end=415,61
           symsg                    TYPE symsg,
@@ -408,10 +408,6 @@ CLASS zcl_logger IMPLEMENTATION.
 
     msg_type    = cl_abap_typedescr=>describe_by_data( obj_to_log ).
     struct_kind = get_struct_kind( msg_type ).
-
-    " Added Detaillevel importing PARAMETER
-    detailed_msg-detlevel = detlevel.
-    detailed_msg-probclass = '4'.
 
     IF obj_to_log IS NOT SUPPLIED.
       detailed_msg = add_syst_msg( syst ).
@@ -520,6 +516,10 @@ CLASS zcl_logger IMPLEMENTATION.
       detailed_msg-context   = formatted_context.
       detailed_msg-params    = formatted_params.
       detailed_msg-probclass = importance.
+      IF NOT detlevel IS INITIAL.
+        " Added Detaillevel importing PARAMETER
+        detailed_msg-detlevel = detlevel.
+      ENDIF.
       CALL FUNCTION 'BAL_LOG_MSG_ADD'
         EXPORTING
           i_log_handle = me->handle
@@ -627,8 +627,8 @@ CLASS zcl_logger IMPLEMENTATION.
   METHOD zif_logger~fullscreen.
 
     DATA:
-          profile        TYPE bal_s_prof,
-          lt_log_handles TYPE bal_t_logh.
+      profile        TYPE bal_s_prof,
+      lt_log_handles TYPE bal_t_logh.
 
     APPEND me->handle TO lt_log_handles.
 
