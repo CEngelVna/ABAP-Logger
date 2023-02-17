@@ -23,11 +23,41 @@ CLASS zcl_logger_collection DEFINITION
 
 ENDCLASS.
 
-CLASS zcl_logger_collection IMPLEMENTATION.
+
+
+CLASS ZCL_LOGGER_COLLECTION IMPLEMENTATION.
+
+
+  METHOD get_display_profile.
+
+    CALL FUNCTION 'BAL_DSP_PROFILE_STANDARD_GET'
+      IMPORTING
+        e_s_display_profile = r_return.
+
+    r_return-head_size = display_profile_head_size .
+    r_return-tree_size = display_profile_tree_size .
+    "interesting fact - I can't remember why I needed to move the hidden columns....
+    IF r_return-mess_fcat IS NOT INITIAL.
+      SORT r_return-mess_fcat BY no_out ASCENDING col_pos DESCENDING.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD get_log_handles.
+
+    DATA logger TYPE REF TO zif_logger.
+    LOOP AT loggers INTO logger.
+      INSERT logger->handle INTO TABLE r_return.
+    ENDLOOP.
+
+  ENDMETHOD.
+
 
   METHOD zif_logger_collection~add_logger.
     APPEND logger TO loggers.
   ENDMETHOD.
+
 
   METHOD zif_logger_collection~display_logs.
     DATA  display_profile  TYPE bal_s_prof.
@@ -37,6 +67,7 @@ CLASS zcl_logger_collection IMPLEMENTATION.
 
     zif_logger_collection~display_logs_using_profile( display_profile ).
   ENDMETHOD.
+
 
   METHOD zif_logger_collection~display_logs_using_profile.
 
@@ -60,29 +91,4 @@ CLASS zcl_logger_collection IMPLEMENTATION.
     ENDIF .
 
   ENDMETHOD.
-
-  METHOD get_log_handles.
-
-    DATA logger TYPE REF TO zif_logger.
-    LOOP AT loggers INTO logger.
-      INSERT logger->handle INTO TABLE r_return.
-    ENDLOOP.
-
-  ENDMETHOD.
-
-  METHOD get_display_profile.
-
-    CALL FUNCTION 'BAL_DSP_PROFILE_STANDARD_GET'
-      IMPORTING
-        e_s_display_profile = r_return.
-
-    r_return-head_size = display_profile_head_size .
-    r_return-tree_size = display_profile_tree_size .
-    "interesting fact - I can't remember why I needed to move the hidden columns....
-    IF r_return-mess_fcat IS NOT INITIAL.
-      SORT r_return-mess_fcat BY no_out ASCENDING col_pos DESCENDING.
-    ENDIF.
-
-  ENDMETHOD.
-
 ENDCLASS.

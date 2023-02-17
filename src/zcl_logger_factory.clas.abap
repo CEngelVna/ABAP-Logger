@@ -42,7 +42,12 @@ ENDCLASS.
 
 
 
-CLASS zcl_logger_factory IMPLEMENTATION.
+CLASS ZCL_LOGGER_FACTORY IMPLEMENTATION.
+
+
+  METHOD create_collection.
+    CREATE OBJECT r_collection TYPE zcl_logger_collection.
+  ENDMETHOD.
 
 
   METHOD create_log.
@@ -180,9 +185,4 @@ CLASS zcl_logger_factory IMPLEMENTATION.
     r_log = lo_log.
 
   ENDMETHOD.
-
-  METHOD create_collection.
-    CREATE OBJECT r_collection TYPE zcl_logger_collection.
-  ENDMETHOD.
-
 ENDCLASS.

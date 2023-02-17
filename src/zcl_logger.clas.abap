@@ -135,7 +135,7 @@ ENDCLASS.
 
 
 
-CLASS zcl_logger IMPLEMENTATION.
+CLASS ZCL_LOGGER IMPLEMENTATION.
 
 
   METHOD add_bapi_msg.
@@ -174,6 +174,44 @@ CLASS zcl_logger IMPLEMENTATION.
     detailed_msg-msgv2 = sprot_message-var2.
     detailed_msg-msgv3 = sprot_message-var3.
     detailed_msg-msgv4 = sprot_message-var4.
+  ENDMETHOD.
+
+
+  METHOD add_structure.
+    DATA: msg_type        TYPE REF TO cl_abap_typedescr,
+          msg_struct_type TYPE REF TO cl_abap_structdescr,
+          components      TYPE abap_compdescr_tab,
+          component       LIKE LINE OF components,
+          string_to_log   TYPE string.
+    FIELD-SYMBOLS: <component>   TYPE any.
+
+    msg_struct_type ?= cl_abap_typedescr=>describe_by_data( obj_to_log ).
+    components = msg_struct_type->components.
+    add( '--- Begin of structure ---' ).
+    LOOP AT components INTO component.
+      ASSIGN COMPONENT component-name OF STRUCTURE obj_to_log TO <component>.
+      IF sy-subrc = 0.
+        msg_type = cl_abap_typedescr=>describe_by_data( <component> ).
+        IF msg_type->kind = cl_abap_typedescr=>kind_elem.
+          string_to_log = |{ to_lower( component-name ) } = { <component> }|.
+          add( string_to_log ).
+        ELSEIF msg_type->kind = cl_abap_typedescr=>kind_struct.
+          add_structure(
+            EXPORTING
+              obj_to_log    = <component>
+              context       = context
+              callback_form = callback_form
+              callback_prog = callback_prog
+              callback_fm   = callback_fm
+              type          = type
+              importance    = importance
+            RECEIVING
+              self          = self
+          ).
+        ENDIF.
+      ENDIF.
+    ENDLOOP.
+    add( '--- End of structure ---' ).
   ENDMETHOD.
 
 
@@ -341,6 +379,26 @@ CLASS zcl_logger IMPLEMENTATION.
       ).
     ENDIF.
 
+  ENDMETHOD.
+
+
+  METHOD save_log.
+    DATA log_handles TYPE bal_t_logh.
+    DATA log_numbers TYPE bal_t_lgnm.
+    DATA log_number  TYPE bal_s_lgnm.
+
+    INSERT me->handle INTO TABLE log_handles.
+    CALL FUNCTION 'BAL_DB_SAVE'
+      EXPORTING
+        i_t_log_handle       = log_handles
+        i_2th_connection     = me->sec_connection
+        i_2th_connect_commit = me->sec_connect_commit
+      IMPORTING
+        e_new_lognumbers     = log_numbers.
+    IF me->db_number IS INITIAL.
+      READ TABLE log_numbers INDEX 1 INTO log_number.
+      me->db_number = log_number-lognumber.
+    ENDIF.
   ENDMETHOD.
 
 
@@ -533,44 +591,6 @@ CLASS zcl_logger IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD add_structure.
-    DATA: msg_type        TYPE REF TO cl_abap_typedescr,
-          msg_struct_type TYPE REF TO cl_abap_structdescr,
-          components      TYPE abap_compdescr_tab,
-          component       LIKE LINE OF components,
-          string_to_log   TYPE string.
-    FIELD-SYMBOLS: <component>   TYPE any.
-
-    msg_struct_type ?= cl_abap_typedescr=>describe_by_data( obj_to_log ).
-    components = msg_struct_type->components.
-    add( '--- Begin of structure ---' ).
-    LOOP AT components INTO component.
-      ASSIGN COMPONENT component-name OF STRUCTURE obj_to_log TO <component>.
-      IF sy-subrc = 0.
-        msg_type = cl_abap_typedescr=>describe_by_data( <component> ).
-        IF msg_type->kind = cl_abap_typedescr=>kind_elem.
-          string_to_log = |{ to_lower( component-name ) } = { <component> }|.
-          add( string_to_log ).
-        ELSEIF msg_type->kind = cl_abap_typedescr=>kind_struct.
-          add_structure(
-            EXPORTING
-              obj_to_log    = <component>
-              context       = context
-              callback_form = callback_form
-              callback_prog = callback_prog
-              callback_fm   = callback_fm
-              type          = type
-              importance    = importance
-            RECEIVING
-              self          = self
-          ).
-        ENDIF.
-      ENDIF.
-    ENDLOOP.
-    add( '--- End of structure ---' ).
-  ENDMETHOD.
-
-
   METHOD zif_logger~e.
     self = add(
       obj_to_log    = obj_to_log
@@ -724,38 +744,6 @@ CLASS zcl_logger IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD zif_logger~w.
-    self = add(
-      obj_to_log    = obj_to_log
-      context       = context
-      callback_form = callback_form
-      callback_prog = callback_prog
-      callback_fm   = callback_fm
-      type          = 'W'
-      importance    = importance ).
-  ENDMETHOD.
-
-
-  METHOD save_log.
-    DATA log_handles TYPE bal_t_logh.
-    DATA log_numbers TYPE bal_t_lgnm.
-    DATA log_number  TYPE bal_s_lgnm.
-
-    INSERT me->handle INTO TABLE log_handles.
-    CALL FUNCTION 'BAL_DB_SAVE'
-      EXPORTING
-        i_t_log_handle       = log_handles
-        i_2th_connection     = me->sec_connection
-        i_2th_connect_commit = me->sec_connect_commit
-      IMPORTING
-        e_new_lognumbers     = log_numbers.
-    IF me->db_number IS INITIAL.
-      READ TABLE log_numbers INDEX 1 INTO log_number.
-      me->db_number = log_number-lognumber.
-    ENDIF.
-  ENDMETHOD.
-
-
   METHOD zif_logger~set_header.
 
     me->header-extnumber = description.
@@ -774,4 +762,15 @@ CLASS zcl_logger IMPLEMENTATION.
 
   ENDMETHOD.
 
+
+  METHOD zif_logger~w.
+    self = add(
+      obj_to_log    = obj_to_log
+      context       = context
+      callback_form = callback_form
+      callback_prog = callback_prog
+      callback_fm   = callback_fm
+      type          = 'W'
+      importance    = importance ).
+  ENDMETHOD.
 ENDCLASS.
