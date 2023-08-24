@@ -135,7 +135,7 @@ ENDCLASS.
 
 
 
-CLASS ZCL_LOGGER IMPLEMENTATION.
+CLASS zcl_logger IMPLEMENTATION.
 
 
   METHOD add_bapi_msg.
@@ -562,13 +562,21 @@ CLASS ZCL_LOGGER IMPLEMENTATION.
           i_text       = free_text_msg
           i_s_context  = formatted_context
           i_s_params   = formatted_params.
+
     ELSEIF exception_data_table IS NOT INITIAL.
       FIELD-SYMBOLS <exception_data> LIKE LINE OF exception_data_table.
       LOOP AT exception_data_table ASSIGNING <exception_data>.
         CALL FUNCTION 'BAL_LOG_EXCEPTION_ADD'
           EXPORTING
-            i_log_handle = me->handle
-            i_s_exc      = <exception_data>.
+            i_log_handle     = me->handle
+            i_s_exc          = <exception_data>
+          EXCEPTIONS
+            log_not_found    = '01'
+            msg_inconsistent = '02'
+            log_is_full      = '03'.
+
+        IF sy-subrc <> 0.
+        ENDIF.
       ENDLOOP.
     ELSEIF detailed_msg IS NOT INITIAL.
       detailed_msg-context   = formatted_context.
@@ -578,10 +586,19 @@ CLASS ZCL_LOGGER IMPLEMENTATION.
         " Added Detaillevel importing PARAMETER
         detailed_msg-detlevel = detlevel.
       ENDIF.
+
       CALL FUNCTION 'BAL_LOG_MSG_ADD'
         EXPORTING
-          i_log_handle = me->handle
-          i_s_msg      = detailed_msg.
+          i_log_handle     = me->handle
+          i_s_msg          = detailed_msg
+        EXCEPTIONS
+          log_not_found    = '01'
+          msg_inconsistent = '02'
+          log_is_full      = '03'.
+
+      IF sy-subrc <> 0.
+      ENDIF.
+
     ENDIF.
 
     IF me->settings->get_autosave( ) = abap_true.
